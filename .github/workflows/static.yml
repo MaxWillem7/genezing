@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="nl" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyse: Geloof voor Genezing</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Scholarly Neutrals -->
+    <!-- Application Structure Plan: De applicatie is gestructureerd als een 'Comparative Theologian Explorer'. Het begint met een algemene introductie, gevolgd door het interactieve kerngedeelte waar de gebruiker kan schakelen tussen de profielen van de vier theologen (De Wal, Hagin, Clark, Wommack). Het selecteren van een theoloog onthult dynamisch hun kernprincipes en de bijbelteksten die zij gebruiken. Door op een bijbeltekst te klikken, wordt een gedetailleerd analysevenster geopend. Dit wordt gevolgd door een sectie voor vergelijkende analyse en een mastertabel met alle sleutelteksten. Deze structuur is gekozen om de dichte, lineaire informatie van het rapport om te zetten in een non-lineaire, interactieve ontdekkingsreis. Het stelt de gebruiker in staat zich te concentreren op specifieke theologen of concepten en maakt de verbanden tussen theologen en teksten direct zichtbaar en navigeerbaar, wat de gebruiksvriendelijkheid en het begrip aanzienlijk verbetert. -->
+    <!-- Visualization & Content Choices: 
+        - Theologen Vergelijken (Rapport Info) -> Doel: Organiseren & Vergelijken -> Presentatie: Interactieve tabbladen/knoppen die een contentpaneel bijwerken -> Interactie: Klik om de informatie van de geselecteerde theoloog te tonen -> Rechtvaardiging: Biedt een gefocuste weergave per theoloog en maakt directe vergelijking eenvoudig door snel te schakelen. Methode: HTML/Tailwind + JS.
+        - Kernprincipes (Rapport Info) -> Doel: Informeren -> Presentatie: Gestileerde lijsten binnen het paneel van elke theoloog -> Interactie: Statische weergave -> Rechtvaardiging: Duidelijke, beknopte presentatie van de kernleerstellingen. Methode: HTML/Tailwind.
+        - Bijbeltekst Analyse (Rapport Info) -> Doel: Diepgaand onderzoeken -> Presentatie: Een detailvenster (modal) dat verschijnt bij een klik -> Interactie: Klik op een bijbelverwijzing om de volledige exegese (tekst, grondtekst, betekenis) te tonen -> Rechtvaardiging: Houdt de hoofdinterface schoon en biedt diepgaande informatie op aanvraag, wat de gebruiker aanmoedigt tot verdere studie. Methode: HTML/Tailwind + JS.
+        - Vergelijkende Analyse (Rapport Info) -> Doel: Synthetiseren -> Presentatie: Uitklapbare accordeonpanelen voor elk vergelijkingspunt (bijv. Mechanisme, Zekerheid) -> Interactie: Klik om de gedetailleerde vergelijkende tekst te onthullen -> Rechtvaardiging: Breekt een lange, complexe analyse op in verteerbare, thematische brokken. Methode: HTML/Tailwind + JS.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9; /* slate-100 */
+            color: #334155; /* slate-700 */
+        }
+        .nav-link {
+            transition: color 0.3s, border-bottom-color 0.3s;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link.active, .nav-link:hover {
+            color: #2563eb; /* blue-600 */
+            border-bottom-color: #2563eb; /* blue-600 */
+        }
+        .theologian-btn {
+            transition: all 0.3s ease;
+            border: 1px solid #cbd5e1; /* slate-300 */
+        }
+        .theologian-btn.active {
+            background-color: #2563eb; /* blue-600 */
+            color: white;
+            border-color: #2563eb; /* blue-600 */
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        .content-section {
+            padding-top: 70px;
+            margin-top: -70px;
+        }
+        .accordion-item .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out;
+        }
+        .accordion-item.open .accordion-content {
+            max-height: 500px;
+        }
+        .accordion-item .accordion-icon {
+            transition: transform 0.3s;
+        }
+        .accordion-item.open .accordion-icon {
+            transform: rotate(180deg);
+        }
+        .modal {
+            display: none;
+            transition: opacity 0.3s ease;
+        }
+        .modal.open {
+            display: flex;
+        }
+        .scripture-link {
+            cursor: pointer;
+            text-decoration: underline;
+            color: #2563eb;
+            font-weight: 500;
+        }
+        .scripture-link:hover {
+            color: #1d4ed8;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white/90 backdrop-blur-lg shadow-sm sticky top-0 z-40">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex-shrink-0">
+                    <h1 class="text-xl font-bold text-slate-800">Geloof voor Genezing: Een Analyse</h1>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#theologen" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600">De Theologen</a>
+                        <a href="#vergelijking" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600">Vergelijking</a>
+                        <a href="#sleutelteksten" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600">Sleutelteksten</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        
+        <section id="intro" class="text-center mb-16">
+            <h2 class="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Een Analyse van Geloof voor Genezing</h2>
+            <p class="mt-4 max-w-3xl mx-auto text-lg text-slate-600">
+                Deze interactieve applicatie biedt een theologische analyse van het concept "geloof voor genezing", gebaseerd op de leringen van vier invloedrijke figuren: Tom de Wal, Kenneth Hagin, Randy Clark en Andrew Wommack. Verken hun theologische kaders, de bijbelteksten die zij aanhalen, en een vergelijkende analyse van hun benaderingen.
+            </p>
+        </section>
+
+        <section id="theologen" class="content-section mb-16">
+            <div class="text-center mb-12">
+                <h2 class="text-2xl font-bold text-slate-800">Verken de Theologen</h2>
+                <p class="mt-2 text-md text-slate-600">Selecteer een theoloog om zijn of haar kernprincipes en gebruikte bijbelteksten te bekijken.</p>
+            </div>
+            
+            <div id="theologian-selector" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <!-- Buttons will be generated here by JS -->
+            </div>
+
+            <div id="theologian-content" class="bg-white p-6 sm:p-8 rounded-lg shadow-lg min-h-[400px]">
+                <!-- Content will be injected here by JS -->
+            </div>
+        </section>
+
+        <section id="vergelijking" class="content-section mb-16">
+            <div class="text-center mb-12">
+                <h2 class="text-2xl font-bold text-slate-800">Vergelijkende Analyse</h2>
+                <p class="mt-2 text-md text-slate-600">Ontdek de overeenkomsten en de onderscheidende accenten tussen de theologen. Klik op een onderwerp om de analyse te lezen.</p>
+            </div>
+            <div id="comparison-accordion" class="space-y-3">
+                <!-- Accordion items will be generated here by JS -->
+            </div>
+        </section>
+
+        <section id="sleutelteksten" class="content-section">
+            <div class="text-center mb-12">
+                <h2 class="text-2xl font-bold text-slate-800">Mastertabel: Sleutelbijbelteksten</h2>
+                <p class="mt-2 text-md text-slate-600">Een overzicht van alle belangrijke bijbelteksten die in deze analyse worden behandeld. Klik op een verwijzing voor een gedetailleerde exegese.</p>
+            </div>
+            <div class="bg-white rounded-lg shadow-lg overflow-x-auto">
+                <table class="w-full text-sm text-left text-slate-500">
+                    <thead class="text-xs text-slate-700 uppercase bg-slate-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3">Referentie</th>
+                            <th scope="col" class="px-6 py-3">HSV Tekst (fragment)</th>
+                            <th scope="col" class="px-6 py-3">Aangehaald door</th>
+                        </tr>
+                    </thead>
+                    <tbody id="master-table-body">
+                        <!-- Table rows will be generated here by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-slate-800 text-slate-300 mt-16">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4 text-center text-sm">
+            <p>&copy; 2025 Interactieve Theologische Analyse. Gemaakt op basis van het rapport "Geloof voor genezing onderzocht".</p>
+        </div>
+    </footer>
+
+    <!-- Modal for Scripture Details -->
+    <div id="scripture-modal" class="modal fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div class="p-6 sm:p-8">
+                <div class="flex justify-between items-start">
+                    <h3 id="modal-title" class="text-2xl font-bold text-slate-800"></h3>
+                    <button id="modal-close-btn" class="text-3xl font-light text-slate-500 hover:text-slate-800">&times;</button>
+                </div>
+                <div id="modal-content" class="mt-4 space-y-4 text-slate-600">
+                    <!-- Modal content will be injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const appData = {
+                theologians: {
+                    "Tom de Wal": {
+                        id: "deWal",
+                        principles: [
+                            "<b>Altijd Gods wil om te genezen:</b> De fundamentele premisse dat het Gods onwankelbare wil is om iedereen te genezen.",
+                            "<b>Volbracht Werk van Christus:</b> Genezing is reeds voorzien en beschikbaar, net als redding en bevrijding.",
+                            "<b>Geloof en Actieve Ontvangst:</b> De gelovige moet de reeds voorziene genezing actief toe-eigenen.",
+                            "<b>Twijfel en Ongeloof als Hindernissen:</b> Deze worden geïdentificeerd als belangrijke obstakels voor de manifestatie van genezing.",
+                            "<b>Rol van de Heilige Geest:</b> Bekrachtigt gelovigen om genezing te ontvangen en te bedienen."
+                        ],
+                        scriptures: ["Mattheüs 8:17", "Jesaja 53:4-5", "1 Petrus 2:24", "Marcus 11:23-24", "Jakobus 5:14-15"]
+                    },
+                    "Kenneth Hagin": {
+                        id: "hagin",
+                        principles: [
+                            "<b>Goddelijke Genezing als Recht:</b> Genezing is een verbondsvoorrecht, een gegarandeerde voorziening voor gelovigen.",
+                            "<b>Kracht van Confessie:</b> Positieve confessie van Gods Woord is cruciaal voor manifestatie ('wat je zegt, krijg je').",
+                            "<b>Geloof als Spirituele Kracht:</b> Geloof kan worden gecultiveerd en vrijgezet door het uitspreken van Gods Woord.",
+                            "<b>Persoonlijke Openbaring:</b> Een directe, ervaringsgerichte ontmoeting met Gods waarheid is essentieel.",
+                            "<b>Goddelijke Gezondheid:</b> Het handhaven van een staat van gezondheid door geloof."
+                        ],
+                        scriptures: ["Marcus 11:23-24", "Jesaja 53:4-5", "1 Petrus 2:24", "Spreuken 4:20-22", "Jakobus 5:14-15"]
+                    },
+                    "Randy Clark": {
+                        id: "clark",
+                        principles: [
+                            "<b>Tastbare Aanwezigheid van God:</b> De sleutel tot bovennatuurlijke manifestaties, inclusief genezing.",
+                            "<b>Overdracht van Zalving (Impartation):</b> De kracht van de Heilige Geest kan worden overgedragen, typisch door handoplegging.",
+                            "<b>Krachtevangelisatie:</b> Genezingswonderen valideren de boodschap van het Evangelie en trekken mensen tot Christus.",
+                            "<b>Prioriteit aan Ervaring:</b> Directe ervaring met Gods kracht krijgt vaak prioriteit boven puur intellectuele instemming.",
+                            "<b>Geloof in Jezus' Naam:</b> De kracht voor genezing is inherent verbonden aan de autoriteit van de Naam van Jezus."
+                        ],
+                        scriptures: ["Handelingen 3:16", "Marcus 16:17-18", "Handelingen 10:38", "Jakobus 5:14-15"]
+                    },
+                    "Andrew Wommack": {
+                        id: "wommack",
+                        principles: [
+                            "<b>'Volbracht Werk' van Christus:</b> Alles, inclusief genezing, is volledig volbracht aan het kruis. Het is een kwestie van ontvangen.",
+                            "<b>Genezing als Onderdeel van Genade:</b> Een vrij geschenk, niet verdiend door werken, toegankelijk door geloof.",
+                            "<b>Identiteit in Christus:</b> Begrijpen dat je als gelovige reeds rechtvaardig en heel bent, is cruciaal.",
+                            "<b>Uitdaging van Traditionele Opvattingen:</b> Bestrijdt de notie dat God ziekte gebruikt om te onderwijzen of te straffen.",
+                            "<b>Invloed van Kenneth Hagin:</b> Bouwt voort op Hagin's leer, maar articuleert deze sterker door de lens van genade."
+                        ],
+                        scriptures: ["1 Petrus 2:24", "Jesaja 53:4-5", "Mattheüs 8:17", "Galaten 3:13", "Romeinen 8:11"]
+                    }
+                },
+                scriptureDetails: {
+                    "Jesaja 53:4-5": {
+                        text: "Voorwaar, Hij heeft onze ziekten op Zich genomen, en onze smarten heeft Hij gedragen... Hij is om onze overtredingen verwond, om onze ongerechtigheden verbrijzeld. De straf die ons de vrede aanbrengt, was op Hem, en door Zijn striemen is er voor ons genezing gekomen.",
+                        focus: "<b>Grondtekst (Hebreeuws):</b> חֳלָיֵנוּ (cholayenu - onze ziekten/kwalen) en מַכְאֹבֵינוּ (mak'ovenu - onze pijnen/smart).",
+                        meaning: "Deze profetie wordt gezien als de Oudtestamentische basis voor de claim dat Christus' lijden ook fysieke genezing omvatte en wordt direct verbonden met zowel geestelijke als fysieke heelheid."
+                    },
+                    "Spreuken 4:20-22": {
+                        text: "Mijn zoon, sla acht op mijn woorden, neig uw oor tot mijn uitspraken... Want zij zijn leven voor wie ze vinden, en genezing voor heel hun vlees.",
+                        focus: "<b>Grondtekst (Hebreeuws):</b> מַרְפֵּא (marpe - genezing, gezondheid).",
+                        meaning: "Benadrukt de levens- en genezende kracht van Gods Woord wanneer het wordt ontvangen en gekoesterd, wat de leer over de kracht van het Woord ondersteunt."
+                    },
+                    "Mattheüs 8:17": {
+                        text: "Hij heeft onze zwakheden op Zich genomen en onze ziekten gedragen.",
+                        focus: "<b>Grondtekst (Grieks):</b> ἀσθενείας (astheneias - zwakheden, gebreken) en νόσους (nosous - ziekten, kwalen).",
+                        meaning: "Een directe citatie van Jesaja 53:4, toegepast op Jezus' genezingsbediening. Dit vers wordt gebruikt om te beargumenteren dat genezing een deel is van Christus' verzoenende werk."
+                    },
+                    "Marcus 11:23-24": {
+                        text: "Voorwaar, Ik zeg u: wie tegen deze berg zal zeggen: Word opgeheven en in de zee geworpen! en niet zal twijfelen in zijn hart, maar zal geloven dat wat hij zegt, zal gebeuren... geloof dat u het ontvangen zult, en het zal u gebeuren.",
+                        focus: "<b>Grondtekst (Grieks):</b> λαμβάνετε (lambanete - u hebt ontvangen/ontvangt). De aoristus-tijdsvorm impliceert een voltooide handeling in het spirituele rijk.",
+                        meaning: "Een fundamentele tekst voor de 'confessie'-theologie, die de kracht van gesproken woorden benadrukt en het geloven dat men reeds heeft ontvangen wat men vraagt."
+                    },
+                    "Marcus 16:17-18": {
+                        text: "...op zieken zullen zij de handen leggen, en zij zullen gezond worden.",
+                        focus: "<b>Grondtekst (Grieks):</b> θεραπεύω (therapeuō - genezen, dienen).",
+                        meaning: "Een belangrijke passage die de voortzetting van bovennatuurlijke tekenen, waaronder genezing door handoplegging, in de bediening van gelovigen beargumenteert."
+                    },
+                    "Handelingen 3:16": {
+                        text: "En door het geloof in Zijn Naam heeft Zijn Naam deze man... sterk gemaakt; en het geloof dat er is door Hem, heeft hem deze volkomen gezondheid gegeven...",
+                        focus: "<b>Grondtekst (Grieks):</b> πίστις (pistis - geloof) en ὁλοκληρία (holokleria - volkomen gezondheid, heelheid).",
+                        meaning: "Benadrukt de kracht in Jezus' Naam en de rol van geloof in het manifesteren van genezing, vooral in de context van openbare demonstratie."
+                    },
+                    "Handelingen 10:38": {
+                        text: "Hoe God Jezus van Nazareth gezalfd heeft met de Heilige Geest en met kracht; Hij is het land doorgegaan, terwijl Hij weldeed en allen genas die door de duivel overweldigd waren...",
+                        focus: "<b>Grondtekst (Grieks):</b> ἰάομαι (iaomai - genezen) en καταδυναστεύω (katadynasteuō - onderdrukken, overweldigen).",
+                        meaning: "Benadrukt Jezus' genezingsbediening als een demonstratie van Gods aanwezigheid en zalving, een patroon voor de bediening van gelovigen."
+                    },
+                     "Romeinen 8:11": {
+                        text: "En als de Geest van Hem Die Jezus uit de doden heeft opgewekt, in u woont, zal Hij... ook uw sterfelijke lichamen levend maken door Zijn Geest...",
+                        focus: "<b>Grondtekst (Grieks):</b> ζωοποιέω (zōopoieō - levend maken, leven geven).",
+                        meaning: "Wordt gebruikt om te beargumenteren dat de Heilige Geest in de gelovige de kracht heeft om het fysieke lichaam levend te maken en te genezen."
+                    },
+                    "Galaten 3:13": {
+                        text: "Christus heeft ons vrijgekocht van de vloek van de wet door voor ons een vloek te worden...",
+                        focus: "<b>Grondtekst (Grieks):</b> ἐξαγοράζω (exagorazō - vrijkopen, verlossen) en κατάρα (katara - vloek).",
+                        meaning: "De 'vloek van de wet' wordt geïnterpreteerd als inclusief ziekte en armoede, en er wordt gesteld dat Christus ons daarvan heeft vrijgekocht."
+                    },
+                    "Jakobus 5:14-15": {
+                        text: "Is iemand onder u ziek? Laat hij de ouderlingen... bij zich roepen... en het gelovige gebed zal de zieke gezond maken...",
+                        focus: "<b>Grondtekst (Grieks):</b> εὔχομαι (euchomai - bidden) en ἰάομαι (iaomai - genezen).",
+                        meaning: "Een sleuteltekst voor de praktijk van gebed en zalving voor genezing binnen de kerkelijke context."
+                    },
+                    "1 Petrus 2:24": {
+                        text: "Die Zelf onze zonden in Zijn lichaam gedragen heeft op het hout... door Wiens striemen u genezen bent.",
+                        focus: "<b>Grondtekst (Grieks):</b> ἰάθητε (iathēte - u bent genezen). De aoristus passieve indicatief duidt op een voltooide handeling in het verleden.",
+                        meaning: "Een hoeksteenvers dat stelt dat fysieke genezing een voltooide realiteit is door Christus' lijden. De verleden tijd is cruciaal voor de interpretatie."
+                    }
+                },
+                comparisons: {
+                    "Mechanisme van Genezing": {
+                        content: `Hoewel allen geloof als sleutel zien, verschilt het primaire mechanisme:<br>
+                                   <ul class='list-disc list-inside mt-2 space-y-1'>
+                                      <li><b>Hagin:</b> Nadruk op 'spreken in geloof' en 'confessie'. De focus ligt op de uitgesproken woorden die geloof vrijzetten.</li>
+                                      <li><b>Wommack:</b> Focus op het begrijpen van 'genade' en het 'volbrachte werk'. Confessie is een uitvloeisel van begrip.</li>
+                                      <li><b>Clark:</b> Nadruk op 'overdracht' (impartation) door handoplegging en de tastbare 'aanwezigheid van God'.</li>
+                                      <li><b>De Wal:</b> Focus op 'actieve ontvangst' en het overwinnen van 'twijfel' door de gelovige.</li>
+                                   </ul>`
+                    },
+                    "Primaire Bron van Zekerheid": {
+                         content: `De basis voor de zekerheid dat God zal genezen, kent verschillende accenten:<br>
+                                   <ul class='list-disc list-inside mt-2 space-y-1'>
+                                      <li><b>Hagin:</b> Persoonlijke openbaring en specifieke beloften in het Woord.</li>
+                                      <li><b>Wommack:</b> De voltooide aard van Christus' werk aan het kruis is de ultieme bron van zekerheid.</li>
+                                      <li><b>Clark:</b> De manifestatie van Gods aanwezigheid en kracht dient als bewijs en bron van zekerheid.</li>
+                                      <li><b>De Wal:</b> Gods onveranderlijke karakter en wil vormen de basis voor de zekerheid van genezing.</li>
+                                   </ul>`
+                    },
+                    "Context en Toepassing": {
+                        content: `De toepassing van de leer heeft verschillende focuspunten:<br>
+                                   <ul class='list-disc list-inside mt-2 space-y-1'>
+                                      <li><b>Hagin:</b> Richtte zich vaak op individuele gelovigen die hun verbondsrechten claimen.</li>
+                                      <li><b>Wommack:</b> Benadrukt dat theologisch begrip de sleutel is tot de manifestatie van genezing.</li>
+                                      <li><b>Clark:</b> Verbindt genezing sterk met evangelisatie en het demonstreren van Gods kracht.</li>
+                                      <li><b>De Wal:</b> Biedt praktische stappen voor het ontvangen en behouden van genezing in het dagelijks leven.</li>
+                                   </ul>`
+                    }
+                }
+            };
+            
+            const theologianSelector = document.getElementById('theologian-selector');
+            const theologianContent = document.getElementById('theologian-content');
+            const comparisonAccordion = document.getElementById('comparison-accordion');
+            const masterTableBody = document.getElementById('master-table-body');
+            const modal = document.getElementById('scripture-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalContent = document.getElementById('modal-content');
+            const modalCloseBtn = document.getElementById('modal-close-btn');
+
+            function displayTheologian(name) {
+                const data = appData.theologians[name];
+                if (!data) return;
+
+                const principlesHTML = data.principles.map(p => `<li class="flex items-start"><span class="text-blue-500 mr-2 mt-1">&#10003;</span><span>${p}</span></li>`).join('');
+                const scripturesHTML = data.scriptures.map(s => `<li class="scripture-link" data-scripture="${s}">${s}</li>`).join(', ');
+
+                theologianContent.innerHTML = `
+                    <h3 class="text-2xl font-bold text-slate-800 mb-4">${name}</h3>
+                    <div class="space-y-6">
+                        <div>
+                            <h4 class="font-semibold text-lg text-slate-700 mb-2">Kernprincipes</h4>
+                            <ul class="space-y-2 text-slate-600">${principlesHTML}</ul>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-lg text-slate-700 mb-2">Veelgebruikte Bijbelteksten</h4>
+                            <p class="text-slate-600">${scripturesHTML}</p>
+                        </div>
+                    </div>
+                `;
+                 document.querySelectorAll('.scripture-link').forEach(link => {
+                    link.addEventListener('click', (e) => showScriptureModal(e.target.dataset.scripture));
+                });
+            }
+
+            function createTheologianButtons() {
+                Object.keys(appData.theologians).forEach(name => {
+                    const btn = document.createElement('button');
+                    btn.className = 'theologian-btn py-3 px-2 rounded-lg font-semibold text-slate-700 bg-white';
+                    btn.textContent = name;
+                    btn.dataset.name = name;
+                    theologianSelector.appendChild(btn);
+                    btn.addEventListener('click', () => {
+                        document.querySelectorAll('.theologian-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        displayTheologian(name);
+                    });
+                });
+            }
+
+            function createComparisonAccordion() {
+                Object.entries(appData.comparisons).forEach(([title, data]) => {
+                    const item = document.createElement('div');
+                    item.className = 'accordion-item bg-white rounded-lg shadow-md';
+                    item.innerHTML = `
+                        <div class="accordion-header flex justify-between items-center p-4 cursor-pointer">
+                            <h3 class="font-semibold text-md text-slate-800">${title}</h3>
+                            <span class="accordion-icon text-2xl text-blue-500">&#x25BC;</span>
+                        </div>
+                        <div class="accordion-content px-4 pb-4 text-slate-600">
+                            ${data.content}
+                        </div>
+                    `;
+                    comparisonAccordion.appendChild(item);
+                    item.querySelector('.accordion-header').addEventListener('click', () => {
+                        item.classList.toggle('open');
+                    });
+                });
+            }
+
+            function createMasterTable() {
+                Object.keys(appData.scriptureDetails).forEach(ref => {
+                    const row = document.createElement('tr');
+                    row.className = 'bg-white border-b hover:bg-slate-50';
+                    const usedBy = Object.keys(appData.theologians).filter(t => appData.theologians[t].scriptures.includes(ref)).join(', ');
+                    row.innerHTML = `
+                        <td class="px-6 py-4 font-medium text-slate-900 whitespace-nowrap"><span class="scripture-link" data-scripture="${ref}">${ref}</span></td>
+                        <td class="px-6 py-4">${appData.scriptureDetails[ref].text.substring(0, 50)}...</td>
+                        <td class="px-6 py-4">${usedBy}</td>
+                    `;
+                    masterTableBody.appendChild(row);
+                });
+                 document.querySelectorAll('.scripture-link').forEach(link => {
+                    link.addEventListener('click', (e) => showScriptureModal(e.target.dataset.scripture));
+                });
+            }
+            
+            function showScriptureModal(scriptureRef) {
+                const data = appData.scriptureDetails[scriptureRef];
+                if(!data) return;
+
+                modalTitle.textContent = scriptureRef;
+                const usedBy = Object.keys(appData.theologians).filter(t => appData.theologians[t].scriptures.includes(scriptureRef)).join(', ');
+
+                modalContent.innerHTML = `
+                    <div class="bg-slate-50 p-4 rounded-lg">
+                        <p class="italic">"${data.text}"</p>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-slate-800">Grondtekst Focus</h4>
+                        <p>${data.focus}</p>
+                    </div>
+                     <div>
+                        <h4 class="font-semibold text-slate-800">Exegetische Betekenis</h4>
+                        <p>${data.meaning}</p>
+                    </div>
+                     <div>
+                        <h4 class="font-semibold text-slate-800">Aangehaald door</h4>
+                        <p>${usedBy}</p>
+                    </div>
+                `;
+                modal.classList.add('open');
+            }
+
+            function hideScriptureModal() {
+                modal.classList.remove('open');
+            }
+            
+            modalCloseBtn.addEventListener('click', hideScriptureModal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    hideScriptureModal();
+                }
+            });
+
+            // Initial setup
+            createTheologianButtons();
+            createComparisonAccordion();
+            createMasterTable();
+
+            // Select the first theologian by default
+            const firstButton = theologianSelector.querySelector('.theologian-btn');
+            if(firstButton) {
+                firstButton.click();
+            }
+
+             // Navigation scroll highlighting
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('.content-section');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        navLinks.forEach(link => {
+                            link.classList.toggle('active', link.getAttribute('href').substring(1) === entry.target.id);
+                        });
+                    }
+                });
+            }, { rootMargin: '-30% 0px -60% 0px', threshold: 0.1 });
+            sections.forEach(section => observer.observe(section));
+        });
+    </script>
+</body>
+</html>
